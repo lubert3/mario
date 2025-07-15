@@ -1,0 +1,155 @@
+﻿<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Mario Runner</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #87CEEB;
+            font-family: sans-serif;
+        }
+
+        #gameCanvas {
+            background: #87CEEB;
+            display: block;
+            margin: auto;
+            touch-action: none;
+        }
+
+        #jumpBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 20px;
+            font-size: 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        #score {
+            position: fixed;
+            top: 10px;
+            right: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="480" height="320"></canvas>
+    <button id="jumpBtn">↑</button>
+    <div id="score">0</div>
+
+    <script>const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const jumpBtn = document.getElementById("jumpBtn");
+const scoreDiv = document.getElementById("score");
+
+let gameSpeed = 4, gravity = 0.5, gameOver = false;
+let player = { x:50, y: 0, vy:0, width:40, height:40, grounded:false };
+let obstacles = [];
+let bgX = 0;
+let score = 0, frame = 0;
+
+// Gestione salto
+function jump() {
+  if (player.grounded) {
+    player.vy = -10;
+    player.grounded = false;
+  }
+}
+jumpBtn.addEventListener("touchstart", jump);
+window.addEventListener("keydown", e => { if (e.code == "Space") jump(); });
+
+// Genera ostacoli
+function spawnObstacle() {
+  const size = 40;
+  obstacles.push({ x:canvas.width, y:canvas.height-60, width:size, height:size });
+}
+
+// Aggiorna stato di gioco
+function update() {
+  if (gameOver) return;
+
+  frame++;
+  bgX -= gameSpeed;
+  if (bgX <= -canvas.width) bgX = 0;
+
+  if (frame % 90 == 0) spawnObstacle();
+  score = Math.floor(frame / 5);
+  scoreDiv.textContent = score;
+
+  // Fisica giocatore
+  player.vy += gravity;
+  player.y += player.vy;
+  if (player.y + player.height >= canvas.height - 20) {
+    player.y = canvas.height - 20 - player.height;
+    player.vy = 0;
+    player.grounded = true;
+  }
+
+  // Muovi ostacoli
+  obstacles.forEach(o => o.x -= gameSpeed);
+  obstacles = obstacles.filter(o => o.x + o.width > 0);
+
+  // Collisioni
+  obstacles.forEach(o => {
+    if (player.x < o.x + o.width &&
+        player.x + player.width > o.x &&
+        player.y < o.y + o.height &&
+        player.y + player.height > o.y) {
+      gameOver = true;
+    }
+  });
+}
+
+// Disegna tutto
+function draw() {
+  // Sfondo
+  ctx.fillStyle = "#87CEEB";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Terreno scorrevole
+  const groundH = 20;
+  ctx.fillStyle = "#228B22";
+  ctx.fillRect(0, canvas.height - groundH, canvas.width, groundH);
+  for (let i = 0; i < 2; i++) {
+    const x = (bgX + i * canvas.width);
+    ctx.fillStyle = "#32CD32";
+    ctx.fillRect(x + 0, canvas.height - groundH - 10, 60, 10);
+    ctx.fillRect(x + 150, canvas.height - groundH - 15, 50, 15);
+    ctx.fillRect(x + 300, canvas.height - groundH - 12, 40, 12);
+  }
+
+  // Giocatore
+  ctx.fillStyle = "#FFD700";
+  ctx.fillRect(player.x, player.y, player.width, player.height);
+  ctx.fillStyle = "#000";
+  ctx.fillRect(player.x+10, player.y+10, 20, 10);
+
+  // Ostacoli
+  ctx.fillStyle = "#8B4513";
+  obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.width, o.height));
+}
+
+// Loop di gioco
+function loop() {
+  update();
+  draw();
+  if (!gameOver) requestAnimationFrame(loop);
+  else scoreDiv.textContent += "  GAME OVER";
+}
+
+// Avvia gioco
+loop();</script>
+</body>
+</html>
