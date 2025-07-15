@@ -2,154 +2,403 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mini Mario Runner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mini Runner Giorno/Notte</title>
     <style>
-        body {
+        /* Reset */
+        * {
+            box-sizing: border-box;
+        }
+
+        body, html {
             margin: 0;
+            padding: 0;
+            height: 100%;
             overflow: hidden;
-            background: #87CEEB;
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000;
+            user-select: none;
         }
 
         #gameCanvas {
-            background: #87CEEB;
             display: block;
-            margin: auto;
+            margin: 0 auto;
+            background: #87ceeb;
             touch-action: none;
+            border-radius: 8px;
         }
 
-        #jumpBtn {
+        #uiLayer {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 20px;
-            font-size: 24px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            z-index: 2;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
         }
+
+        /* Scenario Selection */
+        #scenario {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 12px;
+            text-align: center;
+            pointer-events: auto;
+            z-index: 10;
+            width: 260px;
+        }
+
+            #scenario h2 {
+                margin-bottom: 20px;
+                font-weight: 700;
+                font-size: 1.4rem;
+            }
+
+            #scenario button {
+                margin: 8px 12px;
+                padding: 12px 25px;
+                font-size: 1.1rem;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: background-color 0.25s;
+            }
+
+                #scenario button#dayBtn {
+                    background-color: #4CAF50;
+                    color: white;
+                }
+
+                    #scenario button#dayBtn:hover {
+                        background-color: #45a049;
+                    }
+
+                #scenario button#nightBtn {
+                    background-color: #3f51b5;
+                    color: white;
+                }
+
+                    #scenario button#nightBtn:hover {
+                        background-color: #2c387e;
+                    }
+
+        /* Header - pause and score */
+        #header {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 9;
+            color: white;
+            font-weight: 700;
+            text-shadow: 1px 1px 3px black;
+            user-select: none;
+        }
+
+        #pauseBtn {
+            background: #222;
+            border: none;
+            color: white;
+            font-size: 1.25rem;
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+            #pauseBtn:hover {
+                background: #444;
+            }
 
         #score {
-            position: fixed;
-            top: 10px;
-            right: 20px;
-            font-size: 24px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 1px 1px 2px #000;
-            z-index: 2;
+            font-size: 1.25rem;
         }
+
+        /* Jump button */
+        #jumpBtn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #ff5722;
+            border: none;
+            color: white;
+            font-size: 2.2rem;
+            padding: 14px 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 0 12px #ff5722aa;
+            transition: background-color 0.3s;
+            user-select: none;
+            z-index: 9;
+        }
+
+            #jumpBtn:hover {
+                background: #e64a19;
+            }
+
+        /* Game Over Screen */
+        #gameOver {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.85);
+            color: white;
+            text-align: center;
+            padding: 40px 50px;
+            border-radius: 16px;
+            pointer-events: auto;
+            z-index: 11;
+            display: none;
+            width: 300px;
+        }
+
+            #gameOver h2 {
+                font-size: 2rem;
+                margin-bottom: 25px;
+                letter-spacing: 2px;
+            }
+
+            #gameOver button {
+                background: #ff5722;
+                border: none;
+                padding: 14px 28px;
+                font-size: 1.3rem;
+                border-radius: 12px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+                #gameOver button:hover {
+                    background: #e64a19;
+                }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="480" height="320"></canvas>
-    <button id="jumpBtn">↑</button>
-    <div id="score">0</div>
 
-    <script>const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-const jumpBtn = document.getElementById("jumpBtn");
-const scoreDiv = document.getElementById("score");
+    <canvas id="gameCanvas" width="480" height="320" aria-label="Gioco piattaforma runner"></canvas>
 
-let gameSpeed = 4, gravity = 0.5, gameOver = false;
-let player = { x:50, y: 0, vy:0, width:40, height:40, grounded:false };
-let obstacles = [];
-let bgX = 0;
-let score = 0, frame = 0;
+    <div id="uiLayer">
 
-// Gestione salto
-function jump() {
-  if (player.grounded) {
-    player.vy = -10;
-    player.grounded = false;
-  }
-}
-jumpBtn.addEventListener("touchstart", jump);
-window.addEventListener("keydown", e => { if (e.code == "Space") jump(); });
+        <!-- Scelta scenario -->
+        <div id="scenario" role="dialog" aria-modal="true" aria-labelledby="scenarioTitle">
+            <h2 id="scenarioTitle">Scegli uno scenario</h2>
+            <button id="dayBtn" aria-label="Scenario giorno">Giorno</button>
+            <button id="nightBtn" aria-label="Scenario notte">Notte</button>
+        </div>
 
-// Genera ostacoli
-function spawnObstacle() {
-  const size = 40;
-  obstacles.push({ x:canvas.width, y:canvas.height-60, width:size, height:size });
-}
+        <!-- Header: pausa e punteggio -->
+        <div id="header" style="display:none;">
+            <button id="pauseBtn" aria-pressed="false" aria-label="Pausa/Play">⏸️</button>
+            <div id="score" aria-live="polite" aria-atomic="true">0</div>
+        </div>
 
-// Aggiorna stato di gioco
-function update() {
-  if (gameOver) return;
+        <!-- Pulsante salto -->
+        <button id="jumpBtn" aria-label="Salta" style="display:none;">↑</button>
 
-  frame++;
-  bgX -= gameSpeed;
-  if (bgX <= -canvas.width) bgX = 0;
+        <!-- Game Over -->
+        <div id="gameOver" role="alertdialog" aria-live="assertive" aria-modal="true">
+            <h2>GAME OVER</h2>
+            <button id="retryBtn">Riprova</button><br><br>
+            <button id="backBtn">Cambia Scenario</button>
+        </div>
 
-  if (frame % 90 == 0) spawnObstacle();
-  score = Math.floor(frame / 5);
-  scoreDiv.textContent = score;
+        <!-- SCRIPT -->
+        <script>(() => {
+                const canvas = document.getElementById("gameCanvas");
+                const ctx = canvas.getContext("2d");
 
-  // Fisica giocatore
-  player.vy += gravity;
-  player.y += player.vy;
-  if (player.y + player.height >= canvas.height - 20) {
-    player.y = canvas.height - 20 - player.height;
-    player.vy = 0;
-    player.grounded = true;
-  }
+                // UI elements
+                const scenarioDiv = document.getElementById("scenario");
+                const dayBtn = document.getElementById("dayBtn");
+                const nightBtn = document.getElementById("nightBtn");
+                const headerDiv = document.getElementById("header");
+                const pauseBtn = document.getElementById("pauseBtn");
+                const scoreDiv = document.getElementById("score");
+                const jumpBtn = document.getElementById("jumpBtn");
+                const gameOverDiv = document.getElementById("gameOver");
+                const retryBtn = document.getElementById("retryBtn");
+                const backBtn = document.getElementById("backBtn"); // <=== nuovo bottone
 
-  // Muovi ostacoli
-  obstacles.forEach(o => o.x -= gameSpeed);
-  obstacles = obstacles.filter(o => o.x + o.width > 0);
+                // Game constants
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const groundHeight = 20;
 
-  // Collisioni
-  obstacles.forEach(o => {
-    if (player.x < o.x + o.width &&
-        player.x + player.width > o.x &&
-        player.y < o.y + o.height &&
-        player.y + player.height > o.y) {
-      gameOver = true;
-    }
-  });
-}
+                // Variables for game state
+                let scenario = null;
+                let gameSpeed = 4;
+                let gravity = 0.5;
+                let player = { x: 50, y: 0, vy: 0, width: 40, height: 40, grounded: false };
+                let obstacles = [];
+                let bgX = 0;
+                let frameCount = 0;
+                let paused = true;
+                let gameOver = false;
 
-// Disegna tutto
-function draw() {
-  // Sfondo
-  ctx.fillStyle = "#87CEEB";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+                function selectScenario(scn) {
+                    scenario = scn;
+                    scenarioDiv.style.display = "none";
+                    headerDiv.style.display = "flex";
+                    jumpBtn.style.display = "block";
+                    resetGame();
+                    paused = false;
+                    pauseBtn.textContent = "⏸️";
+                    pauseBtn.setAttribute("aria-pressed", "false");
+                    requestAnimationFrame(loop);
+                }
 
-  // Terreno scorrevole
-  const groundH = 20;
-  ctx.fillStyle = "#228B22";
-  ctx.fillRect(0, canvas.height - groundH, canvas.width, groundH);
-  for (let i = 0; i < 2; i++) {
-    const x = (bgX + i * canvas.width);
-    ctx.fillStyle = "#32CD32";
-    ctx.fillRect(x + 0, canvas.height - groundH - 10, 60, 10);
-    ctx.fillRect(x + 150, canvas.height - groundH - 15, 50, 15);
-    ctx.fillRect(x + 300, canvas.height - groundH - 12, 40, 12);
-  }
+                function resetGame() {
+                    player.x = 50;
+                    player.y = canvasHeight - groundHeight - player.height;
+                    player.vy = 0;
+                    player.grounded = true;
+                    obstacles = [];
+                    bgX = 0;
+                    frameCount = 0;
+                    gameSpeed = 4;
+                    paused = false;
+                    gameOver = false;
+                    scoreDiv.textContent = "0";
+                    gameOverDiv.style.display = "none";
+                    headerDiv.style.display = "flex"; // <=== mostra nuovamente al retry
+                    pauseBtn.style.display = "inline-block";
+                }
 
-  // Giocatore
-  ctx.fillStyle = "#FFD700";
-  ctx.fillRect(player.x, player.y, player.width, player.height);
-  ctx.fillStyle = "#000";
-  ctx.fillRect(player.x+10, player.y+10, 20, 10);
+                function togglePause() {
+                    if (gameOver) return;
+                    paused = !paused;
+                    pauseBtn.textContent = paused ? "▶️" : "⏸️";
+                    pauseBtn.setAttribute("aria-pressed", paused ? "true" : "false");
+                    if (!paused) requestAnimationFrame(loop);
+                }
 
-  // Ostacoli
-  ctx.fillStyle = "#8B4513";
-  obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.width, o.height));
-}
+                function jump() {
+                    if (!gameOver && !paused && player.grounded) {
+                        player.vy = -10;
+                        player.grounded = false;
+                    }
+                }
 
-// Loop di gioco
-function loop() {
-  update();
-  draw();
-  if (!gameOver) requestAnimationFrame(loop);
-  else scoreDiv.textContent += "  GAME OVER";
-}
+                function spawnObstacle() {
+                    const size = 40;
+                    const yPos = canvasHeight - groundHeight - size;
+                    obstacles.push({ x: canvasWidth, y: yPos, width: size, height: size });
+                }
 
-// Avvia gioco
-loop();</script>
-</body>
-</html>
+                function update() {
+                    frameCount++;
+                    if (frameCount % 300 === 0) gameSpeed += 0.5;
+                    if (frameCount % 90 === 0) spawnObstacle();
+                    bgX -= gameSpeed;
+                    if (bgX <= -canvasWidth) bgX = 0;
+
+                    player.vy += gravity;
+                    player.y += player.vy;
+
+                    if (player.y + player.height >= canvasHeight - groundHeight) {
+                        player.y = canvasHeight - groundHeight - player.height;
+                        player.vy = 0;
+                        player.grounded = true;
+                    }
+
+                    obstacles.forEach((obs, i) => {
+                        obs.x -= gameSpeed;
+                        if (obs.x + obs.width < 0) obstacles.splice(i, 1);
+
+                        if (
+                            player.x < obs.x + obs.width &&
+                            player.x + player.width > obs.x &&
+                            player.y < obs.y + obs.height &&
+                            player.y + player.height > obs.y
+                        ) {
+                            gameOver = true;
+                            pauseBtn.style.display = "none"; // <=== nascondi al game over
+                        }
+                    });
+
+                    scoreDiv.textContent = Math.floor(frameCount / 5);
+                }
+
+                function draw() {
+                    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+                    if (scenario === "day") {
+                        ctx.fillStyle = "#87CEEB";
+                        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                        ctx.fillStyle = "#228B22";
+                        ctx.fillRect(0, canvasHeight - groundHeight, canvasWidth, groundHeight);
+                        for (let i = 0; i < 10; i++) {
+                            let x = (i * 60 + (bgX % 60));
+                            ctx.fillStyle = "#32CD32";
+                            ctx.fillRect(x, canvasHeight - groundHeight - 10, 40, 10);
+                        }
+                    } else {
+                        ctx.fillStyle = "#001a33";
+                        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                        ctx.fillStyle = "#003300";
+                        ctx.fillRect(0, canvasHeight - groundHeight, canvasWidth, groundHeight);
+                        for (let i = 0; i < 10; i++) {
+                            let x = (i * 60 + (bgX % 60));
+                            ctx.fillStyle = "#005500";
+                            ctx.fillRect(x, canvasHeight - groundHeight - 10, 40, 10);
+                        }
+                    }
+
+                    ctx.fillStyle = scenario === "day" ? "#FFD700" : "#FFAA00";
+                    ctx.fillRect(player.x, player.y, player.width, player.height);
+                    ctx.fillStyle = "#000";
+                    ctx.fillRect(player.x + 12, player.y + 15, 7, 7);
+                    ctx.fillRect(player.x + 22, player.y + 15, 7, 7);
+
+                    obstacles.forEach(obs => {
+                        ctx.fillStyle = scenario === "day" ? "#8B4513" : "#4e342e";
+                        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    });
+                }
+
+                function loop() {
+                    if (gameOver) {
+                        gameOverDiv.style.display = "block";
+                        headerDiv.style.display = "none"; // <=== nascondi tutto
+                        jumpBtn.style.display = "none";
+                        return;
+                    }
+
+                    if (!paused) {
+                        update();
+                        draw();
+                        requestAnimationFrame(loop);
+                    }
+                }
+
+                // Eventi
+                dayBtn.addEventListener("click", () => selectScenario("day"));
+                nightBtn.addEventListener("click", () => selectScenario("night"));
+                pauseBtn.addEventListener("click", togglePause);
+                jumpBtn.addEventListener("click", jump);
+                window.addEventListener("keydown", e => { if (e.code === "Space") jump(); });
+                retryBtn.addEventListener("click", () => {
+                    resetGame();
+                    requestAnimationFrame(loop);
+                });
+
+                backBtn.addEventListener("click", () => {
+                    scenario = null;
+                    gameOverDiv.style.display = "none";
+                    scenarioDiv.style.display = "block";
+                    headerDiv.style.display = "none";
+                    jumpBtn.style.display = "none";
+                    paused = true;
+                });
+            })();</script>

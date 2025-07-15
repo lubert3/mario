@@ -1,0 +1,12 @@
+﻿{
+    "name": "Mini Runner",
+    "short_name": "Runner",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#000000",
+    "orientation": "portrait-primary",
+    "scope": "./",
+    "description": "Gioco 2D stile platform con scenario Giorno/Notte",
+    "lang": "it-IT"
+}
